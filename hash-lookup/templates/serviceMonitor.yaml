@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "hash-lookup.name" . }}
+    helm.sh/chart: {{ include "hash-lookup.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: {{ include "hash-lookup.name" . }}
+    app.kubernetes.io/part-of: {{ .Release.Name }}
+    release: snyk-kubernetes-runtime
+  name: {{ include "hash-lookup.name" . }}
+# Spec tells Prometheus how to scrape your service
+spec:
+  # Scrape the service at the desired port every 10s in the default namespace.
+  # Prometheus calls /metrics by default.
+  endpoints:
+  - interval: 10s
+    port: hash-lookup  # This needs to be the name of the port in your Deployment
+  namespaceSelector:
+    matchNames:
+    - default        # This tells prometheus to look for Endpoints in a namespace
+  selector:
+    # These labels are required to discover the Endpoints of your service
+    # they are the same you put on your deployment + svc manifests
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hash-lookup.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: {{ include "hash-lookup.fullname" . }}

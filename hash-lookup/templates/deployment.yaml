@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hash-lookup.fullname" . }}
+  labels:
+    name: {{ include "hash-lookup.name" . }}
+{{ include "hash-lookup.labels" . | indent 4 }}
+    app.kubernetes.io/component: {{ include "hash-lookup.fullname" . }}
+    app.kubernetes.io/part-of: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.scale.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hash-lookup.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: {{ include "hash-lookup.fullname" . }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: {{ include "hash-lookup.name" . }}
+        app.kubernetes.io/name: {{ include "hash-lookup.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: {{ include "hash-lookup.fullname" . }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      volumes:
+      - name: hash-lookup-secrets-volume
+        secret:
+          secretName: hash-lookup-secret-config
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: hash-lookup
+              containerPort: 13500
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: hash-lookup
+          env:
+          - name: SERVICE_ENV
+            value: {{ .Values.env }}
+          - name: UV_THREADPOOL_SIZE
+            value: '24'
+          - name: NODE_OPTIONS
+            value: --max_old_space_size=400
+          - name: CONFIG_SECRET_FILE
+            value: /etc/secrets/config.secret.json
+          - name: APP_NAME
+            value: hash-lookup
+          {{- with .Values.nsolidConfig }}
+            {{- toYaml . | trim | nindent 10 -}}
+          {{- end }}
+          volumeMounts:
+          - name: hash-lookup-secrets-volume
+            mountPath: /etc/secrets
+            readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

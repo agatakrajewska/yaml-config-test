@@ -1,0 +1,19 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "hash-lookup.name" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "hash-lookup.name" . }}
+    helm.sh/chart: {{ include "hash-lookup.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: {{ include "hash-lookup.name" . }}
+    app.kubernetes.io/part-of: {{ .Release.Name }}
+spec:
+  maxReplicas: {{ .Values.scale.maxReplicas }}
+  minReplicas: {{ .Values.scale.minReplicas }}
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: {{ include "hash-lookup.name" . }}
+  targetCPUUtilizationPercentage: 100

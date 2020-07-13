@@ -1,0 +1,7 @@
+lookup:
+  scale:
+    replicaCount: 2
+    maxReplicas: 4
+    minReplicas: 2
+
+env: prod

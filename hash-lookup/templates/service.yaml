@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hash-lookup.fullname" . }}
+  labels:
+{{ include "hash-lookup.labels" . | indent 4 }}
+    app.kubernetes.io/component: {{ include "hash-lookup.fullname" . }}
+    app.kubernetes.io/part-of: {{ .Release.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: hash-lookup
+      protocol: TCP
+      name: hash-lookup
+  selector:
+    app.kubernetes.io/name: {{ include "hash-lookup.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: {{ include "hash-lookup.fullname" . }}
